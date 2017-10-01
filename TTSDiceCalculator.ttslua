@@ -1,0 +1,64 @@
+rolls = {}
+function onObjectRandomize(object, player_color)
+    local steam_name = Player[player_color].steam_name
+    if rolls[steam_name] == nil or not rolls[steam_name].is_rolling then
+        broadcastToAll(steam_name .. " has started rolling", {0,255,0})
+        rolls[steam_name] = newPlayerRoll(steam_name)
+        rolls[steam_name].start_roll(object)
+    else
+        rolls[steam_name].add(object)
+    end
+end
+
+function newPlayerRoll(steam_name)
+    local self = {
+        dice = {},
+        steam_name = steam_name,
+        rolling = false
+    }
+
+    local still_rolling = function()
+        rolling = true
+        Timer.destroy(self.steam_name .. ":roll_timer")
+        Timer.create({
+            identifier = self.steam_name .. ":roll_timer",
+            function_name = "finishRoll",
+            parameters = { self.steam_name },
+            delay = 3, --in seconds
+        })
+    end
+
+    local add = function(object)
+        still_rolling()
+        self.dice[object.getGUID()] = object
+    end
+
+    local finish = function()
+        n = 0
+        total = 0
+        for k, v in pairs(self.dice) do
+            n = n + 1
+            total = total + v.getValue()
+        end
+        message = self.steam_name .. " has rolled " .. n .. " dice. Total: " .. total
+        broadcastToAll(message, {0,255,0})
+        self.dice = {} -- can optimize this if RAM becomes an issue
+        rolling = false
+    end
+
+    local is_rolling = function()
+        return self.rolling
+    end
+
+    return {
+        add = add,
+        start_roll = add,
+        finish = finish,
+        is_rolling = is_rolling,
+    }
+end
+
+function finishRoll(steam_name)
+    steam_name = steam_name[1]
+    rolls[steam_name].finish()
+end
