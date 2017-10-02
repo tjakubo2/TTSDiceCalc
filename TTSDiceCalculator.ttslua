@@ -43,6 +43,7 @@ function newPlayerRoll(steam_name)
 
     local groupDice = function()
         counts = {}
+        counts[20] = {}
         total = 0
         for k, v in pairs(self.dice) do
             diceType = #v.getRotationValues()
